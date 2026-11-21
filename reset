@@ -1,0 +1,30 @@
+local health_offset
+
+local function getRobloxVersionHash()
+    local ok, res = pcall(function()
+        return game:HttpGet("https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer")
+    end)
+    if not ok or not res then return nil end
+    return res:match('"clientVersionUpload"%s*:%s*"([^"]+)"')
+end
+
+local hash = getRobloxVersionHash()
+if hash then
+    local ok, response = pcall(function()
+        return game:HttpGet("https://offsets.imtheo.lol/" .. hash .. "/offsets.hpp")
+    end)
+    if ok and response then
+        local hexVal = response:match("Health%s*=%s*(0x%x+)")
+        if hexVal then health_offset = tonumber(hexVal) end
+    end
+end
+
+if health_offset then
+    local Players = game:GetService("Players")
+    local player = Players and Players.LocalPlayer
+    local char = player and player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum and hum.Address then
+        memory_write("float", hum.Address + health_offset, -10)
+    end
+end
